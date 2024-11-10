@@ -1,0 +1,86 @@
+﻿@{
+    ViewData["Title"] = "URL Shortener";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>URL Shortener</h1>
+
+    <form id="urlForm">
+        <label for="urlInput">Enter URL:</label>
+        <input type="url" id="urlInput" required placeholder="Enter your URL here" />
+        <button type="submit">Shorten URL</button>
+    </form>
+
+    <div id="shortenedUrl" style="margin-top: 20px; display: none;">
+        <p>Shortened URL:</p>
+        <a id="shortUrl" target="_blank" href=""></a>
+        <button onclick="copyToClipboard()">Copy to Clipboard</button>
+    </div>
+
+    <div id="errorMessage" style="color: red; margin-top: 20px; display: none;">
+        <p id="errorText"></p>
+    </div>
+
+    <script>
+        // Form submission handling
+        $('#urlForm').submit(async function (e) {
+            e.preventDefault();
+
+            const url = $('#urlInput').val();
+            const errorMessage = $('#errorMessage');
+            const shortenedUrlDiv = $('#shortenedUrl');
+            const shortUrl = $('#shortUrl');
+
+            // Reset UI elements
+            errorMessage.hide();
+            shortenedUrlDiv.hide();
+
+            try {
+                const response = await fetch('/api/url/shorten', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to shorten URL');
+                }
+
+                const data = await response.json();
+                const shortenedUrl = `${window.location.origin}/${data.shortCode}`;
+
+                // Display shortened URL
+                shortUrl.text(shortenedUrl);
+                shortUrl.attr('href', shortenedUrl);
+                shortenedUrlDiv.show();
+            } catch (err) {
+                // Handle error
+                errorMessage.show();
+                $('#errorText').text(err.message);
+            }
+        });
+
+        // Copy shortened URL to clipboard
+        function copyToClipboard() {
+            const url = $('#shortUrl').text();
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    alert('Copied to clipboard');
+                })
+                .catch(err => {
+                    alert('Failed to copy to clipboard');
+                });
+        }
+    </script>
+</body>
+</html>
