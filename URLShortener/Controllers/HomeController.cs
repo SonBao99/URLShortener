@@ -22,15 +22,15 @@ namespace URLShortener.Controllers
         }
 
         [Authorize]
-        public IActionResult MyUrls()
-        {
-            var userId = User.Identity?.Name;
-            var urls = _urlContext.Urls
-                .Where(u => u.UserId == userId)
-                .OrderByDescending(u => u.CreatedAt)
-                .ToList();
-            return View(urls);
-        }
+        //public IActionResult MyUrls()
+        //{
+        //    var userId = User.Identity?.Name;
+        //    var urls = _urlContext.Urls
+        //        .Where(u => u.UserId == userId)
+        //        .OrderByDescending(u => u.CreatedAt)
+        //        .ToList();
+        //    return View(urls);
+        //}
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

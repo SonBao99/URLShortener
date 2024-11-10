@@ -45,21 +45,69 @@ namespace URLShortener.Controllers
 
         // GET api/url/{shortCode}
         [HttpGet("{shortCode}")]
-        public async Task<IActionResult> RedirectToOriginalUrl(string shortCode)
+public async Task<IActionResult> RedirectToOriginalUrl(string shortCode)
+{
+    try
+    {
+        if (string.IsNullOrEmpty(shortCode))
         {
-            // Find the original URL by short code
-            var url = await _context.Urls.FirstOrDefaultAsync(u => u.ShortenedCode == shortCode);
+            return BadRequest("Short code cannot be empty.");
+        }
 
-            if (url == null)
-                return NotFound("URL not found.");
+        // Find the original URL by short code
+        var url = await _context.Urls
+            .AsNoTracking()  // Add this if you don't need to track the entity
+            .FirstOrDefaultAsync(u => u.ShortenedCode == shortCode);
 
-            // Increment hit count and save
+        if (url == null)
+        {
+            return NotFound("URL not found.");
+        }
+
+        if (string.IsNullOrEmpty(url.OriginalUrl))
+        {
+            return BadRequest("Invalid URL record.");
+        }
+
+        // Check if URL has expired
+        if (url.ExpirationDate.HasValue && url.ExpirationDate.Value < DateTime.UtcNow)
+        {
+            return BadRequest("URL has expired.");
+        }
+
+        // Update hit count in a separate operation
+        await UpdateHitCount(shortCode);
+
+        // Redirect to the original URL
+        return Redirect(url.OriginalUrl);
+    }
+    catch (Exception ex)
+    {
+        // Log the exception details here
+        return StatusCode(500, "An error occurred while processing your request.");
+    }
+}
+
+// Separate method to handle hit count updates
+private async Task UpdateHitCount(string shortCode)
+{
+    try
+    {
+        var url = await _context.Urls
+            .FirstOrDefaultAsync(u => u.ShortenedCode == shortCode);
+            
+        if (url != null)
+        {
             url.HitCount++;
             await _context.SaveChangesAsync();
-
-            // Redirect to the original URL
-            return Redirect(url.OriginalUrl);
         }
+    }
+    catch (Exception ex)
+    {
+        // Log the error but don't fail the redirect
+        // Consider adding proper logging here
+    }
+}
 
 
         // Optional: GET api/url/stats/{shortCode}
